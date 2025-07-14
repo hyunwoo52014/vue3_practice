@@ -1,13 +1,41 @@
-<script setup></script>
+<script setup>
+import router from '@/router';
+import { useModalState } from '@/stores/modalState';
+import { onMounted, ref } from 'vue';
+
+const searchTitle = ref('');
+const searchStDate = ref('');
+const searchEdDate = ref('');
+const modalState = useModalState();
+
+// 검색 버튼을 클릭을 할 때, 검색 데이터가 queryParam에 들어가게끔 하는 함수
+const handlerSearch = () => {
+  const query = [];
+
+  // 1. searchTitle및 각 입력 폼에 값이 있을 경우, 쿼리라는 array에 담아 둘 것
+  !searchTitle.value || query.push(`title=${searchTitle.value}`);
+  !searchStDate.value || query.push(`startDate=${searchStDate.value}`);
+  !searchEdDate.value || query.push(`endDate=${searchEdDate.value}`);
+
+  const queryString = query.length > 0 ? `?${query.join('&')}` : '';
+
+  router.push(queryString);
+};
+
+onMounted(() => {
+  window.location.search && router.replace(window.location.pathname);
+});
+</script>
 
 <template>
   <div class="notice-container">
     <div class="input-box">
-      제목: <input />
-      <input type="date" />
-      <input type="date" />
-      <button>검색</button>
-      <button>등록</button>
+      제목: <input v-model.lazy="searchTitle" />
+      <!-- v-model.lazy 입력을 종료 할 때 렌더링 (정확히는 해당 요소의 포커스를 잃었을 때)-->
+      <input v-model="searchStDate" type="date" />
+      <input v-model="searchEdDate" type="date" />
+      <button @click="handlerSearch">검색</button>
+      <button @click="modalState.$patch({ isOpen: true })">등록</button>
     </div>
   </div>
 </template>

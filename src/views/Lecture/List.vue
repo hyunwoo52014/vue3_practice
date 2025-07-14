@@ -1,6 +1,4 @@
-<script setup lang="ts">
-import PageNavigation from '@/components/common/PageNavigation.vue';
-</script>
+<script setup></script>
 
 <template>
   <body>
