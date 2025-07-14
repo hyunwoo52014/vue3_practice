@@ -1,28 +1,70 @@
-<script setup></script>
+<script setup>
+import PageNavigation from '@/components/common/PageNavigation.vue';
+import router from '@/router';
+import axios from 'axios';
+import { onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+
+///
+const searchTag = ref('lecName');
+const searchTitle = ref('');
+const searchStDate = ref('');
+const searchEdDate = ref('');
+const currentPage = ref(1);
+const pageSize = ref(5);
+
+const lectureList = ref([]);
+const lectureCount = ref(0);
+
+const handlerSearch = () => {
+  const query = [];
+
+  !searchTag.value || query.push(`searchTag=${searchTag.value}`);
+  !searchTitle.value || query.push(`searchTtitle=${searchTitle.value}`);
+  !searchStDate.value || query.push(`searchStDate=${searchStDate.value}`);
+  !searchEdDate.value || query.push(`searchEdDate=${searchEdDate.value}`);
+  !currentPage.value || query.push(`currentPage=${currentPage.value}`);
+  !pageSize.value || query.push(`pageSize=${pageSize.value}`);
+
+  const queryString = query.length > 0 ? `?${query.join('&')}` : '';
+
+  router.push(queryString);
+};
+
+const route = useRoute();
+
+const listSearch = () => {
+  const param = new URLSearchParams(route.query);
+  param.append('currentPage', currentPage.value);
+  param.append('pageSize', pageSize.value);
+
+  console.log(param);
+
+  axios.post('/api/lecture/lectureListBody.do', param).then((res) => {
+    lectureList.value = res.data.list;
+    lectureCount.value = res.data.count;
+  });
+};
+
+onMounted(() => {
+  listSearch();
+  window.location.search && router.replace(window.location.pathname);
+});
+
+watch(
+  () => route.query,
+  () => {
+    listSearch();
+  },
+);
+</script>
 
 <template>
   <body>
-    <input type="hidden" id="currentPage" value="1" />
-    <input type="hidden" name="action" id="action" value="" />
-
     <div id="wrap_area">
-      <h2 class="hidden">header 영역</h2>
-      <Header></Header>
-
-      <h2 class="hidden">컨텐츠 영역</h2>
       <div id="container">
         <ul>
-          <!--
-          <li class="lnb">
-            lnb 영역
-            <jsp:include page="/WEB-INF/view/common/lnbMenu.jsp"></jsp:include>
-            // lnb 영역
-          </li>
-          -->
           <li class="contents">
-            <!-- contents -->
-            <h3 class="hidden">contents 영역</h3>
-            <!-- content -->
             <div class="content">
               <p class="Location">
                 <a href="#" class="btn_set home">메인으로</a>
@@ -35,49 +77,59 @@
                 <span style="display: block">강의 목록</span>
                 <span class="fr" style="margin-top: 0px">
                   <span style="margin: 0 0px">
-                    <select id="searchTag" name="searchTag" style="width: 90px; height: 27px">
+                    <select
+                      id="searchTag"
+                      v-model="searchTag"
+                      name="searchTag"
+                      style="width: 90px; height: 27px"
+                    >
                       <option value="lecName">강의명</option>
                       <option value="lecInstructorName">강사명</option>
                       <option value="lecRoomName">강의실</option>
                     </select>
                     <input
-                      type="text"
                       id="searchTitle"
+                      v-model="searchTitle"
+                      type="text"
                       name="searchTitle"
                       style="width: 350px; height: 25px; margin-right: 5px"
                     />
                   </span>
                   <span style="margin: 0 5px">
                     강의 기간
-                    <input type="date" id="searchStDate" name="searchStDate" style="height: 25px" />
+                    <input
+                      id="searchStDate"
+                      v-model="searchStDate"
+                      type="date"
+                      name="searchStDate"
+                      style="height: 25px"
+                    />
                     ~
                     <input
-                      type="date"
                       id="searchEdDate"
+                      v-model="searchEdDate"
+                      type="date"
                       name="searchEdDate"
                       style="height: 25px; margin-right: 5px"
                     />
                   </span>
                   <span>
                     <a class="btnType red" href="" name="searchbtn" id="searchBtn"
-                      ><span>검색</span></a
+                      ><button @click="handlerSearch">검색</button></a
                     >
                   </span>
                 </span>
               </p>
               <div class="divLectureList">
                 <table class="col">
-                  <caption>
-                    caption
-                  </caption>
                   <colgroup>
-                    <col width="30px" />
-                    <col width="30px" />
-                    <col width="10px" />
-                    <col width="10px" />
-                    <col width="10px" />
-                    <col width="10px" />
-                    <col width="10px" />
+                    <col width="25%" />
+                    <col width="25%" />
+                    <col width="10%" />
+                    <col width="10%" />
+                    <col width="10%" />
+                    <col width="10%" />
+                    <col width="10%" />
                   </colgroup>
                   <thead>
                     <tr>
@@ -90,17 +142,44 @@
                       <th scope="col">강의실</th>
                     </tr>
                   </thead>
-                  <tbody id="lectureList"></tbody>
+                  <tbody id="lectureList">
+                    <template v-if="lectureCount > 0">
+                      <tr
+                        v-for="lecture in lectureList"
+                        :key="lecture.lecId"
+                        class="notice-table-row"
+                      >
+                        <td class="notice-cell">{{ lecture.lecName }}</td>
+                        <td class="notice-cell cursor-pointer hover:underline">
+                          <!-- @click="modalState.$patch(noticeDetail)" -->
+                          {{ lecture.lecInstructorName }}
+                        </td>
+                        <td class="notice-cell">{{ lecture.lecStartDate.substr(0, 10) }}</td>
+                        <td class="notice-cell">{{ lecture.lecEndDate.substr(0, 10) }}</td>
+                        <td class="notice-cell">{{ lecture.lecPersonnel }}</td>
+                        <td class="notice-cell">{{ lecture.courseCntPersonnel }}</td>
+                        <td class="notice-cell">{{ lecture.lecRoomName }}</td>
+                      </tr>
+                    </template>
+                    <template v-else>
+                      <tr>
+                        <td colspan="7" class="notice-empty-row">일치하는 검색 결과가 없습니다</td>
+                      </tr>
+                    </template>
+                  </tbody>
                 </table>
 
                 <!-- 페이징 처리  -->
-                <div class="paging_area" id="pageNavigation"></div>
+                <!--<div class="paging_area" id="pageNavigation"></div>-->
+                <PageNavigation
+                  :total-items="currentPage"
+                  :items-per-page="pageSize"
+                  :on-page-change="listSearch"
+                />
               </div>
             </div>
-            <!--// content -->
 
             <h3 class="hidden">풋터 영역</h3>
-            <Footer></Footer>
           </li>
         </ul>
       </div>
@@ -281,18 +360,17 @@
 </template>
 <style lang="scss" scoped>
 @import '/src/assets/css_bundle/common.css';
-@import '/src/assets/css_bundle/bootstrap-datepicker3.min.css';
-@import '/src/assets/css_bundle/bootstrap-datepicker3.standalone.css';
-@import '/src/assets/css_bundle/bootstrap-datepicker3.standalone.min.css';
-@import '/src/assets/css_bundle/common.css';
-@import '/src/assets/css_bundle/custom_bootstrap.css';
-@import '/src/assets/css_bundle/font.css';
-@import '/src/assets/css_bundle/jquery-ui.css';
-@import '/src/assets/css_bundle/jquery-ui.min.css';
-@import '/src/assets/css_bundle/layout.css';
-@import '/src/assets/css_bundle/reset.css';
-@import '/src/assets/css_bundle/salarytable.css';
-@import '/src/assets/css_bundle/bootstrap-datepicker3.css';
-@import '/src/assets/css_bundle/salesplan.css';
-@import '/src/assets/css_bundle/style.css';
+// @import '/src/assets/css_bundle/bootstrap-datepicker3.min.css';
+// @import '/src/assets/css_bundle/bootstrap-datepicker3.standalone.css';
+// @import '/src/assets/css_bundle/bootstrap-datepicker3.standalone.min.css';
+// @import '/src/assets/css_bundle/custom_bootstrap.css';
+// @import '/src/assets/css_bundle/font.css';
+// @import '/src/assets/css_bundle/jquery-ui.css';
+// @import '/src/assets/css_bundle/jquery-ui.min.css';
+// @import '/src/assets/css_bundle/layout.css';
+// @import '/src/assets/css_bundle/reset.css';
+// @import '/src/assets/css_bundle/salarytable.css';
+// @import '/src/assets/css_bundle/bootstrap-datepicker3.css';
+// @import '/src/assets/css_bundle/salesplan.css';
+// @import '/src/assets/css_bundle/style.css';
 </style>

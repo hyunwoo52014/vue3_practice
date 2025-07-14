@@ -7,7 +7,7 @@ import NoticeModal from '../NoticeModal/NoticeModal.vue';
 import { useModalState } from '@/stores/modalState';
 
 const route = useRoute();
-const noticeList = ref([]);``
+const noticeList = ref([]);
 const noticeCount = ref(0);
 const modalState = useModalState();
 
